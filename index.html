@@ -1,0 +1,618 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Serial Clock — Automated Composition</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: Georgia, serif;
+            max-width: 820px;
+            margin: 0 auto;
+            padding: 40px 24px 80px;
+            line-height: 1.7;
+            color: #2c2c2c;
+            background: #fafaf8;
+        }
+
+        header {
+            margin-bottom: 48px;
+            padding-bottom: 24px;
+            border-bottom: 1px solid #ddd;
+        }
+
+        header h1 {
+            font-size: 28px;
+            font-weight: normal;
+            letter-spacing: -0.5px;
+        }
+
+        header p {
+            color: #777;
+            font-size: 14px;
+            margin-top: 4px;
+        }
+
+        section {
+            margin-bottom: 48px;
+        }
+
+        h2 {
+            font-size: 22px;
+            font-weight: normal;
+            margin-bottom: 12px;
+            padding-bottom: 6px;
+            border-bottom: 1px solid #e8e8e8;
+        }
+
+        h3 {
+            font-size: 16px;
+            font-weight: bold;
+            margin-top: 24px;
+            margin-bottom: 8px;
+            color: #444;
+        }
+
+        p {
+            margin-bottom: 12px;
+        }
+
+        ul {
+            margin: 12px 0 12px 24px;
+        }
+
+        li {
+            margin-bottom: 6px;
+        }
+
+        code {
+            font-family: 'SF Mono', 'Menlo', 'Monaco', monospace;
+            font-size: 13px;
+            background: #f0f0ee;
+            padding: 1px 5px;
+            border-radius: 3px;
+        }
+
+        .subtitle {
+            font-style: italic;
+            color: #888;
+            font-size: 15px;
+            margin-bottom: 18px;
+        }
+
+        hr {
+            border: none;
+            border-top: 1px solid #e8e8e8;
+            margin: 48px 0;
+        }
+
+        blockquote {
+            border-left: 3px solid #d8d8d4;
+            padding-left: 14px;
+            margin: 14px 0;
+            color: #555;
+            font-style: italic;
+        }
+
+        /* ---- widget ---- */
+        .pst-widget {
+            background: #fff;
+            border: 1px solid #e2e2de;
+            border-radius: 6px;
+            padding: 18px;
+            margin-top: 12px;
+        }
+
+        .clock-wrap {
+            background: #0e0e14;
+            border-radius: 4px;
+            aspect-ratio: 1 / 1;
+            max-width: 520px;
+            margin: 0 auto 16px;
+            overflow: hidden;
+        }
+
+        #clock-canvas {
+            width: 100%;
+            height: 100%;
+            display: block;
+            cursor: pointer;
+        }
+
+        .now-playing-label {
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 0.6px;
+            color: #666;
+            margin-bottom: 4px;
+        }
+
+        .current-label-box {
+            background: #f4f4f0;
+            border: 1px solid #e2e2de;
+            border-radius: 4px;
+            padding: 10px 12px;
+            font-family: 'SF Mono', Menlo, monospace;
+            font-size: 14px;
+            color: #333;
+            line-height: 1.4;
+            word-break: break-word;
+            text-align: center;
+        }
+
+        .controls {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 14px 22px;
+            margin-bottom: 14px;
+        }
+
+        .ctrl label {
+            display: block;
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 0.6px;
+            color: #666;
+            margin-bottom: 4px;
+        }
+
+        .ctrl .val {
+            font-family: 'SF Mono', Menlo, monospace;
+            font-size: 12px;
+            color: #333;
+            margin-left: 6px;
+        }
+
+        .ctrl input[type="range"] {
+            width: 100%;
+        }
+
+        .ctrl input[type="text"] {
+            width: 100%;
+            padding: 7px 9px;
+            font-family: 'SF Mono', Menlo, monospace;
+            font-size: 14px;
+            background: #fafaf8;
+            border: 1px solid #d8d8d4;
+            border-radius: 3px;
+        }
+
+        .ctrl select {
+            width: 100%;
+            padding: 6px 8px;
+            font-family: Georgia, serif;
+            font-size: 14px;
+            background: #fafaf8;
+            border: 1px solid #d8d8d4;
+            border-radius: 3px;
+        }
+
+        .prob-row {
+            display: flex;
+            gap: 10px;
+        }
+
+        .prob-row .ctrl {
+            flex: 1;
+        }
+
+        .tag {
+            display: inline-block;
+            font-family: 'SF Mono', Menlo, monospace;
+            font-size: 9px;
+            font-weight: normal;
+            text-transform: uppercase;
+            letter-spacing: 0.4px;
+            padding: 1px 5px;
+            border-radius: 2px;
+            margin-left: 6px;
+            vertical-align: 1px;
+        }
+
+        .tag-live {
+            background: #e0efe9;
+            color: #2a6f66;
+            border: 1px solid #bedcd2;
+        }
+
+        .tag-regen {
+            background: #f1ece4;
+            color: #8a6836;
+            border: 1px solid #ddccb2;
+        }
+
+        .controls-legend {
+            font-size: 12px;
+            color: #777;
+            margin-bottom: 10px;
+            font-style: italic;
+        }
+
+        .controls-legend .tag {
+            font-style: normal;
+            margin-left: 0;
+            margin-right: 4px;
+        }
+
+        .weight-bar {
+            display: flex;
+            height: 22px;
+            border-radius: 3px;
+            overflow: hidden;
+            border: 1px solid #e2e2de;
+            margin-top: 8px;
+            background: #f4f4f0;
+            font-family: 'SF Mono', Menlo, monospace;
+            font-size: 11px;
+            color: #fff;
+        }
+
+        .weight-seg {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-width: 0;
+            overflow: hidden;
+            white-space: nowrap;
+            transition: width 0.15s ease;
+        }
+
+        .weight-seg.weight-T {
+            background: #2a6f66;
+        }
+
+        .weight-seg.weight-I {
+            background: #b0582e;
+        }
+
+        .weight-seg.weight-R {
+            background: #5c3a88;
+        }
+
+        .weight-bar-empty {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+            color: #999;
+            font-size: 11px;
+            font-style: italic;
+        }
+
+        .transport {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin-top: 4px;
+        }
+
+        .transport button {
+            font-family: Georgia, serif;
+            font-size: 15px;
+            padding: 8px 18px;
+            border: 1px solid #c8c8c4;
+            background: #fff;
+            color: #2c2c2c;
+            border-radius: 3px;
+            cursor: pointer;
+        }
+
+        .transport button:hover:not(:disabled) {
+            background: #f2f2ee;
+        }
+
+        .transport button:disabled {
+            opacity: 0.45;
+            cursor: not-allowed;
+        }
+
+        .transport #btn-play {
+            background: #2c2c2c;
+            color: #fafaf8;
+            border-color: #2c2c2c;
+        }
+
+        .transport #btn-play:hover:not(:disabled) {
+            background: #444;
+        }
+
+        .hint {
+            font-size: 13px;
+            color: #888;
+            margin-top: 12px;
+            font-style: italic;
+        }
+
+        .pad-toggle-row {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-top: 8px;
+            font-size: 13px;
+            color: #555;
+        }
+
+        .history-wrap {
+            margin-top: 8px;
+            background: #0e0e14;
+            border-radius: 4px;
+            height: 140px;
+            overflow: hidden;
+        }
+
+        #history-canvas {
+            width: 100%;
+            height: 100%;
+            display: block;
+        }
+
+        .history-legend {
+            display: flex;
+            gap: 14px;
+            flex-wrap: wrap;
+            font-size: 11px;
+            color: #888;
+            font-family: 'SF Mono', Menlo, monospace;
+            margin-top: 4px;
+            margin-bottom: 14px;
+        }
+
+        .legend-swatch {
+            display: inline-block;
+            width: 10px;
+            height: 10px;
+            margin-right: 4px;
+            vertical-align: middle;
+            border-radius: 2px;
+        }
+
+        kbd {
+            font-family: 'SF Mono', Menlo, monospace;
+            font-size: 11px;
+            background: #f0f0ee;
+            border: 1px solid #d6d6d2;
+            border-bottom-width: 2px;
+            border-radius: 3px;
+            padding: 1px 5px;
+            color: #444;
+        }
+    </style>
+</head>
+
+<body>
+
+    <header>
+        <h1>Serial Clock</h1>
+        <p>Automated composition via pitch set theory &mdash; transpose, invert, retrograde</p>
+    </header>
+
+    <section>
+        <h2>Pitch Set Theory Composer</h2>
+        <p class="subtitle">
+            Type or click an initial pitch class sequence. Random T / I / R operations unfold the composition.
+        </p>
+
+        <p>
+            A <em>pitch class set</em> treats pitches as equivalent up to octave, so
+            there are exactly twelve of them: C, C#, D, &hellip; B, laid out on the
+            clock face below as 0&ndash;11. Pitch set theory gives you three
+            transformations you can apply to any sequence of pitch classes:
+        </p>
+
+        <ul>
+            <li><strong>Transpose (T<sub>n</sub>)</strong> &mdash; add <em>n</em> mod 12 to every pitch class. On the
+                clock, this is a rotation.</li>
+            <li><strong>Invert (I)</strong> &mdash; reflect each pitch class across 0 (so 1&harr;11, 2&harr;10,
+                &hellip;). On the clock, this is a mirror across the vertical axis.</li>
+            <li><strong>Retrograde (R)</strong> &mdash; reverse the order of the sequence. The <em>set</em> doesn't
+                change; only the reading order does.</li>
+        </ul>
+
+        <p>
+            The generator starts with your initial sequence and, at each step,
+            randomly picks one operation and applies it to the current sequence &mdash;
+            producing a chain of related but never-identical variations.
+        </p>
+
+        <div class="pst-widget">
+
+            <div class="clock-wrap">
+                <canvas id="clock-canvas"></canvas>
+            </div>
+
+            <div class="now-playing-label">Now playing</div>
+            <div id="current-label" class="current-label-box">&mdash;</div>
+
+            <div class="history-wrap">
+                <canvas id="history-canvas"></canvas>
+            </div>
+            <div class="history-legend">
+                <span><span class="legend-swatch" style="background:#d8d8d4;"></span>P (prime)</span>
+                <span><span class="legend-swatch" style="background:#7fd1c7;"></span>T (transpose)</span>
+                <span><span class="legend-swatch" style="background:#e0a078;"></span>I (invert)</span>
+                <span><span class="legend-swatch" style="background:#a68bc9;"></span>R (retrograde)</span>
+            </div>
+
+            <div class="controls-legend">
+                <span class="tag tag-live">live</span> updates while playing
+                &nbsp;&middot;&nbsp;
+                <span class="tag tag-regen">on regen</span> takes effect on next Regenerate / Play
+            </div>
+
+            <p class="hint">
+                Try some of the presets or type your own sequence.
+                Keyboard Shortcuts: <kbd>space</kbd> play/stop, <kbd>r</kbd> regenerate,
+                <kbd>c</kbd> clear.
+            </p>
+
+            <div class="controls">
+                <div class="ctrl" style="grid-column: 1 / -1;">
+                    <label>Initial pitch class sequence (0&ndash;11, or note names) <span class="tag tag-regen">on
+                            regen</span></label>
+                    <input type="text" id="seq-input" placeholder="e.g. 0 1 4 8  or  C Db E G#" />
+                </div>
+
+                <div class="ctrl" style="grid-column: 1 / -1;">
+                    <label>Load preset <span class="tag tag-regen">on regen</span></label>
+                    <select id="preset-select">
+                        <option value="">&mdash; choose a set &mdash;</option>
+                    </select>
+                </div>
+
+                <div class="ctrl">
+                    <label>Tempo (BPM) <span class="tag tag-live">live</span> <span class="val"
+                            id="bpm-display"></span></label>
+                    <input type="range" id="bpm-slider" min="50" max="250" value="180" />
+                </div>
+
+                <div class="ctrl">
+                    <label>Segments <span class="tag tag-regen">on regen</span> <span class="val"
+                            id="nseg-display"></span></label>
+                    <input type="range" id="nseg-slider" min="4" max="96" value="32" />
+                </div>
+
+                <div class="ctrl" style="grid-column: 1 / -1;">
+                    <label>Waveform (sound source) <span class="tag tag-live">live</span></label>
+                    <select id="waveform-select"></select>
+                </div>
+
+                <div class="ctrl" style="grid-column: 1 / -1;">
+                    <label>Operation weights (shown as probability share) <span class="tag tag-regen">on
+                            regen</span></label>
+                    <div class="prob-row">
+                        <div class="ctrl">
+                            <label style="text-transform: none; letter-spacing:0; color:#2a6f66;">Transpose <span
+                                    class="val" id="prob-T-display"></span></label>
+                            <input type="range" id="prob-T" min="0" max="10" value="4" />
+                        </div>
+                        <div class="ctrl">
+                            <label style="text-transform: none; letter-spacing:0; color:#b0582e;">Invert <span
+                                    class="val" id="prob-I-display"></span></label>
+                            <input type="range" id="prob-I" min="0" max="10" value="3" />
+                        </div>
+                        <div class="ctrl">
+                            <label style="text-transform: none; letter-spacing:0; color:#5c3a88;">Retrograde <span
+                                    class="val" id="prob-R-display"></span></label>
+                            <input type="range" id="prob-R" min="0" max="10" value="3" />
+                        </div>
+                    </div>
+                    <div id="weight-bar" class="weight-bar"></div>
+                </div>
+            </div>
+
+            <div class="pad-toggle-row">
+                <input type="checkbox" id="pad-toggle" checked />
+                <label for="pad-toggle" style="margin:0;">Sustain pad (the unordered set as a held chord) <span
+                        class="tag tag-live">live</span></label>
+            </div>
+
+            <div class="transport" style="margin-top: 16px;">
+                <button id="btn-play">Play</button>
+                <button id="btn-stop" disabled>Stop</button>
+                <button id="btn-regen">Regenerate</button>
+                <button id="btn-clear">Clear</button>
+            </div>
+        </div>
+    </section>
+
+    <hr />
+
+    <section>
+        <h2>What I Learned</h2>
+
+        <h3>Pitch set theory</h3>
+        <p>
+            A pitch class is an integer mod 12; a pitch class sequence is a
+            list of those integers; once you have a set of starting pitch
+            classes, you can generate new sequences by transposing, inverting,
+            or retrograding them:
+        </p>
+
+        <blockquote>
+            <code>transpose(seq, n) = seq.map(pc =&gt; (pc + n) % 12)</code><br />
+            <code>invert(seq) = seq.map(pc =&gt; (12 - pc) % 12)</code><br />
+            <code>retrograde(seq) = seq.slice().reverse()</code>
+        </blockquote>
+
+        <p>
+            Using this theory, you can build a generator that wanders through
+            the family of related sequences defined by those operations. It's a
+            different approach to automated composition than Markov chains or
+            cellular automata &mdash; with only T, I, and R you'll only ever
+            reach members of the same small, tightly constrained family of
+            sequences. The flavor of the piece is fixed the moment you pick the
+            input set. After that, the generator is just choosing which sibling
+            to play next.
+        </p>
+
+        <h3>Implementation details</h3>
+
+        <p>
+            I play each segment two ways at once: an arpeggio reading the
+            ordered sequence, and a soft pad holding the unordered set. The
+            arpeggio is a throwaway <code>OscillatorNode</code> per note with
+            a linear attack and exponential decay; the pad is a long-running
+            oscillator per pitch class, each one routed through a
+            <code>StereoPannerNode</code> so voices spread across the field.
+            It gives a nice contrast between the operations that reorder the
+            sequence (retrograde) and the ones that change it
+            (transpose, invert), and the pad makes it easier to hear the
+            underlying pitch set when the arpeggio wanders off.
+        </p>
+
+        <p>
+            A detail that surprised me was this line:
+        </p>
+
+        <blockquote>
+            <code>if (cur.op !== 'R' &amp;&amp; !sameSet(prev.seq, cur.seq))</code><br />
+            <code>&nbsp;&nbsp;refreshPadForCurrentSegment();</code>
+        </blockquote>
+
+        <p>
+            Retrograde only reorders the sequence, so the underlying set is
+            identical &mdash; which means the old pad can just keep ringing
+            while the arpeggio reverses over it. The algebra makes a UX
+            decision for you: when two segments are pad-equivalent, don't
+            interrupt the sustain. You hear exactly what R <em>is</em>.
+        </p>
+
+        <p>
+            For reverb I skipped shipping an impulse-response WAV and just
+            synthesized one &mdash; a couple of seconds of exponentially
+            decaying stereo noise written straight into an
+            <code>AudioBuffer</code> and handed to a
+            <code>ConvolverNode</code>. Not physically realistic, but it's
+            short, has no <code>fetch()</code> race, and sounds like a modest
+            room. The waveform dropdown is similarly simple: four of the
+            options set <code>osc.type</code> to a built-in, the fifth
+            ("rich") swaps in a custom <code>PeriodicWave</code> built from a
+            small Fourier-coefficient array.
+        </p>
+
+        <p>
+            On a piano-roll the operations are abstract. On a 12-position
+            clock they become geometry: rotation for T, reflection across the
+            vertical axis for I, a direction flip for R. I draw the sequence
+            as a polygon on a DPR-scaled canvas and watch that shape rotate or
+            flip between segments. For symmetric sets like
+            <code>{0, 3, 6, 9}</code> the polygon is a square, T<sub>3</sub>
+            leaves it invariant, and the piece goes still. For asymmetric
+            sets the polygon rattles around and the piece feels restless. I
+            didn't plan for the visual to be diagnostic of the music, but it
+            is &mdash; and the decisions that made this sound like a piece
+            instead of a demo weren't really in the generator at all, they
+            were in the audio graph around it.
+        </p>
+    </section>
+
+    <script src="auto_comp.js"></script>
+</body>
+
+</html>
